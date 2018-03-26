@@ -4,14 +4,22 @@ const request = require('supertest');
 let app = require('./../server');
 let Todo = require('./../models/todo');
 
+const todos = [{
+    text: 'learn 1'
+}, {
+    text: 'learn 2'
+}];
+
 beforeEach(done => {
-    Todo.remove().then(() => done());
+    Todo.remove().then(() => {
+        return Todo.insertMany(todos);
+    }).then(() => done());
 });
 
 describe('POST /todos', () => {
 
     it('Should add new todo', done => {
-        let text = 'learn 1';
+        let text = 'learn 3';
         request(app)
             .post('/todos')
             .send({text})
@@ -25,7 +33,7 @@ describe('POST /todos', () => {
                 }
 
                 // check if data has been inserted
-                Todo.find().then(todos => {
+                Todo.find({text}).then(todos => {
                     expect(todos.length).toBe(1);
                     expect(todos[0].text).toBe(text);
                     done();
@@ -48,9 +56,23 @@ describe('POST /todos', () => {
 
                 // make sure no data inserted
                 Todo.find().then(todos => {
-                    expect(todos.length).toBe(0);
+                    expect(todos.length).toBe(2);
                     done();
                 }).catch(err => done(err));
             });
     });
 });
+
+describe('GET /todos', () => {
+
+    it('Should list all todos', done => {
+
+        request(app)
+            .get('/todos')
+            .expect(200)
+            .expect(res => {
+                expect(res.body.todos.length).toBe(2);
+            })
+            .end(done);
+    });
+})
